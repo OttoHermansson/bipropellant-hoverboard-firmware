@@ -319,7 +319,7 @@ int main(void) {
   electrical_measurements.dcCurLim = MIN(DC_CUR_LIMIT*100, FlashContent.MaxCurrLim);
 
 
-
+  // Startup beep.
   for (int i = 8; i >= 0; i--) {
     buzzerFreq = i;
     HAL_Delay(100);

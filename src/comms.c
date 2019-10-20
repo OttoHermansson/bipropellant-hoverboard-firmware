@@ -103,8 +103,18 @@ void consoleLog(char *message)
     }
     #endif
 
+    #if defined DEBUG_SERIAL_USART3
+      if(UART_DMA_CHANNEL->CNDTR == 0) {
+        UART_DMA_CHANNEL->CCR &= ~DMA_CCR_EN;
+        UART_DMA_CHANNEL->CNDTR = strlen(message);
+        UART_DMA_CHANNEL->CMAR  = (uint32_t)message;
+        UART_DMA_CHANNEL->CCR |= DMA_CCR_EN;
+      }
+      // HAL_UART_Transmit_DMA(&huart3, (uint8_t *)message, strlen(message));
+    #endif
+
     #if defined DEBUG_SERIAL_SENSOR && defined CONTROL_SENSOR
-    USART_sensorSend(1, (unsigned char *)message, strlen(message), 0);
+      USART_sensorSend(1, (unsigned char *)message, strlen(message), 0);
     #else
       // TODO: Method to select which input is used for Protocol when both are active
       #if defined(SERIAL_USART2_IT) && !defined(READ_SENSOR)
@@ -112,7 +122,7 @@ void consoleLog(char *message)
       #elif defined(SERIAL_USART3_IT) && !defined(READ_SENSOR)
         USART3_IT_send((unsigned char *)message, strlen(message));
       #elif !defined(READ_SENSOR) && defined(DEBUG_SERIAL_SENSOR)
-        HAL_UART_Transmit_DMA(&huart2, (uint8_t *)message, strlen(message));
+        HAL_UART_Transmit_DMA(&huart3, (uint8_t *)message, strlen(message));
       #endif
     #endif
 }

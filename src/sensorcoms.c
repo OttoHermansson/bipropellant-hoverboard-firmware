@@ -20,17 +20,17 @@
 
 ////////////////////////////////////////////////////////////////
 // code to read and interpret sensors
-SENSOR_DATA sensor_data[2];
-SENSOR_LIGHTS sensorlights[2];
+SENSOR_DATA sensor_data;
+SENSOR_LIGHTS sensorlights;
 
 ///////////////////////////
 // sends data on sensor port.
 // set startframe=1 to add 0x100 to first byte of data.
 // 2019-05-22 - rework based on assumption that 0x1xx
 // represents the START of the data, not the end.
-int USART_sensorSend(int port, unsigned char *data, int len, int endframe){
+int USART_sensorSend(unsigned char *data, int len, int endframe){
 
-    int count = USART_sensor_txcount(port);
+    int count = USART_sensor_txcount();
     // overflow
     if (count + len + 1 > SERIAL_USART_BUFFER_SIZE-3){
         return -1;
@@ -41,59 +41,39 @@ int USART_sensorSend(int port, unsigned char *data, int len, int endframe){
         if(endframe && (i == 0)){
             c |= 0x100;
         }
-        USART_sensor_addTXshort( port, (unsigned short) c );
+        USART_sensor_addTXshort((unsigned short) c );
     }
     
-    USART_sensor_starttx(port);
+    USART_sensor_starttx();
     return 1;
 }
 
-int USART_sensor_rxcount(int port){
-    if (port == 0){
-        return  serial_usart_buffer_count(&usart2_it_RXbuffer);
-    }
-    return  serial_usart_buffer_count(&usart3_it_RXbuffer);
+int USART_sensor_rxcount(){
+    return  serial_usart_buffer_count(&usart2_it_RXbuffer);
 }
 
-int USART_sensor_txcount(int port){
-    if (port == 0){
-        return  serial_usart_buffer_count(&usart2_it_TXbuffer);
-    }
-    return  serial_usart_buffer_count(&usart3_it_TXbuffer);
+int USART_sensor_txcount(){
+    return  serial_usart_buffer_count(&usart2_it_TXbuffer);
 }
 
-void USART_sensor_addTXshort(int port, SERIAL_USART_IT_BUFFERTYPE value) {
-    if (port == 0){
-        return serial_usart_buffer_push(&usart2_it_TXbuffer, value);
-    }  
-    return serial_usart_buffer_push(&usart3_it_TXbuffer, value);
+void USART_sensor_addTXshort(SERIAL_USART_IT_BUFFERTYPE value) {
+    return serial_usart_buffer_push(&usart2_it_TXbuffer, value);
 }
 
-SERIAL_USART_IT_BUFFERTYPE USART_sensor_getrx(int port) {
-    if (port == 0){
-        return serial_usart_buffer_pop(&usart2_it_RXbuffer);
-    }
-    return serial_usart_buffer_pop(&usart3_it_RXbuffer);
+SERIAL_USART_IT_BUFFERTYPE USART_sensor_getrx() {
+    return serial_usart_buffer_pop(&usart2_it_RXbuffer);
 }
 
 // inializes sensor calibration, must be called after flash init
 void sensor_init(){
-    memset((void *)sensorlights, 0, sizeof(sensorlights));
-    memset((void *)sensor_data, 0, sizeof(sensor_data));
-
-    sensor_data[0].Center_calibration = FlashContent.calibration_0;
-    sensor_data[1].Center_calibration = FlashContent.calibration_1;
-    sensor_data[0].side = 0;
-    sensor_data[1].side = 1;
+    sensor_data.Center_calibration = FlashContent.calibration_0;
+    sensor_data.side = 0;
 }
 
 ///////////////////////////
 // starts transmit from buffer on specific port, if data present
-int USART_sensor_starttx(int port){
-    if (port == 0){
-        return USART2_IT_starttx();
-    }
-    return USART3_IT_starttx();
+int USART_sensor_starttx(){
+    return USART2_IT_starttx();
 }
 
 // copy what data we have onto our sensor data structure
@@ -165,10 +145,10 @@ void sensor_read_data(){
     // 2019-05-22 - rework based on assumption that 0x1xx
     // represents the START of the data, not the end.
     // so when we get 0x1xx, we then read bytes until we have enough, then prcoess.
-    for (int side = 0; side < 2; side++){
+    for (int side = 0; side < 1; side++){
         // flush data up to last 20 bytes
         int process = 0;
-        SENSOR_DATA *s = &sensor_data[side];
+        SENSOR_DATA *s = &sensor_data;
         unsigned char orgsw = s->complete.AA_55;
         int remaining = USART_sensor_rxcount(side);
         unsigned char *dest = s->buffer;
@@ -265,15 +245,11 @@ void sensor_read_data(){
 
 // *** NOT USED.
 int sensor_get_speeds(int16_t *speedL, int16_t *speedR){
-	if (sensor_data[0].read_timeout && sensor_data[1].read_timeout){
-		if ((sensor_data[0].complete.AA_55 == 0x55) && (sensor_data[0].complete.AA_55 == 0x55)){
+	if (sensor_data.read_timeout){
+		if (sensor_data.complete.AA_55 == 0x55){
             if (speedL){
-                int angle = (sensor_data[0].complete.Angle - sensor_data[0].Center)/100;
+                int angle = (sensor_data.complete.Angle - sensor_data.Center)/100;
                 *speedL = CLAMP( angle , -10, 10);
-            }
-            if (speedR){
-                int angle = (sensor_data[1].complete.Angle - sensor_data[1].Center)/100;
-                *speedR = CLAMP( angle , -10, 10);
             }
             return 1;
         }
@@ -281,24 +257,21 @@ int sensor_get_speeds(int16_t *speedL, int16_t *speedR){
     if (speedL){
         *speedL = 0;
     }
-    if (speedR){
-        *speedR = 0;
-    }
     return 0;
 }
 
 void sensor_set_flash(int side, int count){
-    sensorlights[side].flashcount = count;
+    sensorlights.flashcount = count;
 }
 
 int diag_count = 0;
 void sensor_set_colour(int side, int colour){
-    if (sensorlights[side].colour != colour) {
+    if (sensorlights.colour != colour) {
         char tmp[40];
-        sprintf(tmp, "colour %d %x -> %x (%d)\r\n", side, sensorlights[side].colour, colour, diag_count++);
+        sprintf(tmp, "colour %d %x -> %x (%d)\r\n", side, sensorlights.colour, colour, diag_count++);
         consoleLog(tmp);
     }
-    sensorlights[side].colour = colour;
+    sensorlights.colour = colour;
 }
 
 void sensor_send_lights(){
@@ -307,14 +280,8 @@ void sensor_send_lights(){
     int count = USART_sensor_txcount(0);
     // don't send unless we are empty
     if (!count) {
-    USART_sensorSend(0, (unsigned char *)&sensorlights[0], 6, 1);
-    USART_sensorSend(0, (unsigned char *)&sensorlights[0], 6, 1);
-    }
-    count = USART_sensor_txcount(1);
-    // don't send unless we are empty
-    if (!count) {
-    USART_sensorSend(1, (unsigned char *)&sensorlights[1], 6, 1);
-        USART_sensorSend(1, (unsigned char *)&sensorlights[1], 6, 1);
+        USART_sensorSend((unsigned char *)&sensorlights, 6, 1);
+        USART_sensorSend((unsigned char *)&sensorlights, 6, 1);
     }
 }
 

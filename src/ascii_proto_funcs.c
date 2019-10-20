@@ -65,7 +65,7 @@ extern int control_type;
 ///////////////////////////////////////////////
 // extern variables you want to read/write here
 #ifdef CONTROL_SENSOR
-extern SENSOR_DATA sensor_data[2];
+extern SENSOR_DATA sensor_data;
 extern int sensor_control;
 extern int sensor_stabilise;
 #endif
@@ -124,23 +124,20 @@ int immediate_dir(PROTOCOL_STAT *s, char byte, char *ascii_out) {
 #ifdef FLASH_STORAGE
                 case CONTROL_TYPE_POSITION:
     #ifdef HALL_INTERRUPTS
-                    PosnData.wanted_posn_mm[0] += dir * 100;
-                    PosnData.wanted_posn_mm[1] += dir * 100;
-                    sprintf(ascii_out, "wanted_posn now %ldmm %ldmm\r\n", PosnData.wanted_posn_mm[0], PosnData.wanted_posn_mm[1]);
+                    PosnData.wanted_posn_mm += dir * 100;
+                    sprintf(ascii_out, "wanted_posn now %ldmm\r\n", PosnData.wanted_posn_mm);
     #endif
                     break;
                 case CONTROL_TYPE_SPEED:
                     speedB += 10*dir;
-                    SpeedData.wanted_speed_mm_per_sec[1] = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
-                    SpeedData.wanted_speed_mm_per_sec[0] = CLAMP(speedB * SPEED_COEFFICIENT +  steerB * STEER_COEFFICIENT, -1000, 1000);
-                    sprintf(ascii_out, "speed now %d, steer now %d, speedL %ld, speedR %ld\r\n", speedB, steerB, SpeedData.wanted_speed_mm_per_sec[0], SpeedData.wanted_speed_mm_per_sec[1]);
+                    SpeedData.wanted_speed_mm_per_sec = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
+                    sprintf(ascii_out, "speed now %d, steer now %d, speed %ld\r\n", speedB, steerB, SpeedData.wanted_speed_mm_per_sec);
                     break;
 #endif
                 case CONTROL_TYPE_PWM:
                     speedB += 10*dir;
-                    PWMData.pwm[1] = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
-                    PWMData.pwm[0] = CLAMP(speedB * SPEED_COEFFICIENT +  steerB * STEER_COEFFICIENT, -1000, 1000);
-                    sprintf(ascii_out, "speed now %d, steer now %d, pwm %ld, pwm %ld\r\n", speedB, steerB, PWMData.pwm[0], PWMData.pwm[1]);
+                    PWMData.pwm = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
+                    sprintf(ascii_out, "speed now %d, steer now %d, pwm %ld\r\n", speedB, steerB, PWMData.pwm);
                     break;
             }
             break;
@@ -157,23 +154,20 @@ int immediate_dir(PROTOCOL_STAT *s, char byte, char *ascii_out) {
 #ifdef FLASH_STORAGE
                 case CONTROL_TYPE_POSITION:
     #ifdef HALL_INTERRUPTS
-                    PosnData.wanted_posn_mm[0] += dir * 100;
-                    PosnData.wanted_posn_mm[1] -= dir * 100;
-                    sprintf(ascii_out, "wanted_posn now %ldmm %ldmm\r\n", PosnData.wanted_posn_mm[0], PosnData.wanted_posn_mm[1]);
+                    PosnData.wanted_posn_mm -= dir * 100;
+                    sprintf(ascii_out, "wanted_posn now %ldmm\r\n", PosnData.wanted_posn_mm);
     #endif
                     break;
                 case CONTROL_TYPE_SPEED:
                     steerB += 10*dir;
-                    SpeedData.wanted_speed_mm_per_sec[1] = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
-                    SpeedData.wanted_speed_mm_per_sec[0] = CLAMP(speedB * SPEED_COEFFICIENT +  steerB * STEER_COEFFICIENT, -1000, 1000);
-                    sprintf(ascii_out, "speed now %d, steer now %d, speedL %ld, speedR %ld\r\n", speedB, steerB, SpeedData.wanted_speed_mm_per_sec[0], SpeedData.wanted_speed_mm_per_sec[1]);
+                    SpeedData.wanted_speed_mm_per_sec = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
+                    sprintf(ascii_out, "speed now %d, steer now %d, speed %ld\r\n", speedB, steerB, SpeedData.wanted_speed_mm_per_sec);
                     break;
 #endif
                 case CONTROL_TYPE_PWM:
                     steerB += 10*dir;
-                    PWMData.pwm[1] = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
-                    PWMData.pwm[0] = CLAMP(speedB * SPEED_COEFFICIENT +  steerB * STEER_COEFFICIENT, -1000, 1000);
-                    sprintf(ascii_out, "speed now %d, steer now %d, pwm %d->%ld, pwm %d->%ld\r\n", speedB, steerB, pwms[0], PWMData.pwm[0], pwms[1], PWMData.pwm[1]);
+                    PWMData.pwm = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
+                    sprintf(ascii_out, "speed now %d, steer now %d, pwm %d->%ld\r\n", speedB, steerB, pwms[0], PWMData.pwm);
                     break;
             }
             break;
@@ -186,17 +180,15 @@ int immediate_dir(PROTOCOL_STAT *s, char byte, char *ascii_out) {
 int immediate_stop(PROTOCOL_STAT *s, char byte, char *ascii_out) {
     speedB = 0;
     steerB = 0;
-    PWMData.pwm[1] = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
-    PWMData.pwm[0] = CLAMP(speedB * SPEED_COEFFICIENT +  steerB * STEER_COEFFICIENT, -1000, 1000);
-    SpeedData.wanted_speed_mm_per_sec[0] = SpeedData.wanted_speed_mm_per_sec[1] = speedB;
+    PWMData.pwm = CLAMP(speedB * SPEED_COEFFICIENT +  steerB * STEER_COEFFICIENT, -1000, 1000);
+    SpeedData.wanted_speed_mm_per_sec = speedB;
 #ifdef HALL_INTERRUPTS
     HallData[0].HallSpeed_mm_per_s = HallData[1].HallSpeed_mm_per_s = 0;
 #endif
     dspeeds[0] = dspeeds[1] = speedB;
     pwms[0] = pwms[1] = speedB;
 #ifdef HALL_INTERRUPTS
-    PosnData.wanted_posn_mm[0] = HallData[0].HallPosn_mm;
-    PosnData.wanted_posn_mm[1] = HallData[1].HallPosn_mm;
+    PosnData.wanted_posn_mm = HallData[0].HallPosn_mm;
 #endif
 #ifdef CONTROL_SENSOR
     sensor_control = 0;
@@ -210,16 +202,14 @@ int immediate_quit(PROTOCOL_STAT *s, char byte, char *ascii_out) {
     enable_immediate = 0;
     speedB = 0;
     steerB = 0;
-    PWMData.pwm[1] = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
-    PWMData.pwm[0] = CLAMP(speedB * SPEED_COEFFICIENT +  steerB * STEER_COEFFICIENT, -1000, 1000);
-    SpeedData.wanted_speed_mm_per_sec[0] = SpeedData.wanted_speed_mm_per_sec[1] = speedB;
+    PWMData.pwm = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
+    SpeedData.wanted_speed_mm_per_sec = speedB;
 #ifdef HALL_INTERRUPTS
-    HallData[0].HallSpeed_mm_per_s = HallData[1].HallSpeed_mm_per_s = 0;
+    HallData[0].HallSpeed_mm_per_s = HallData[0].HallSpeed_mm_per_s = 0;
 #endif
     pwms[0] = pwms[1] = speedB;
 #ifdef HALL_INTERRUPTS
-    PosnData.wanted_posn_mm[0] = HallData[0].HallPosn_mm;
-    PosnData.wanted_posn_mm[1] = HallData[1].HallPosn_mm;
+    PosnData.wanted_posn_mm = HallData[0].HallPosn_mm;
 #endif
 #ifdef CONTROL_SENSOR
     sensor_control = 0;
@@ -247,10 +237,8 @@ int immediate_hall(PROTOCOL_STAT *s, char byte, char *ascii_out) {
 int immediate_sensors(PROTOCOL_STAT *s, char byte, char *ascii_out) {
 #ifdef CONTROL_SENSOR
     sprintf(ascii_out,
-        "L: OK:%d Foot:%d Angle:%d Roll:%d Accel:%d\r\n"\
-        "R: OK:%d Foot:%d Angle:%d Roll:%d Accel:%d\r\n",
-        sensor_data[0].sensor_ok, (sensor_data[0].complete.AA_55 == 0x55)?1:0, sensor_data[0].complete.Angle, sensor_data[0].complete.Roll, sensor_data[0].complete.Accelleration,
-        sensor_data[1].sensor_ok, (sensor_data[1].complete.AA_55 == 0x55)?1:0, sensor_data[1].complete.Angle, sensor_data[1].complete.Roll, sensor_data[1].complete.Accelleration
+        "L: OK:%d Foot:%d Angle:%d Roll:%d Accel:%d\r\n",
+        sensor_data.sensor_ok, (sensor_data.complete.AA_55 == 0x55)?1:0, sensor_data.complete.Angle, sensor_data.complete.Roll, sensor_data.complete.Accelleration
     );
 #else
     sprintf(ascii_out, "Sensor Data not available\r\n");
@@ -322,10 +310,9 @@ int line_toggle_sensor_control(PROTOCOL_STAT *s, char *cmd, char *ascii_out) {
     control_type = 0;
     speedB = 0;
     steerB = 0;
-    SpeedData.wanted_speed_mm_per_sec[0] = SpeedData.wanted_speed_mm_per_sec[1] = speedB;
+    SpeedData.wanted_speed_mm_per_sec = speedB;
 #ifdef HALL_INTERRUPTS
-    PosnData.wanted_posn_mm[0] = HallData[0].HallPosn_mm;
-    PosnData.wanted_posn_mm[1] = HallData[1].HallPosn_mm;
+    PosnData.wanted_posn_mm = HallData[0].HallPosn_mm;
 #endif
     sprintf(ascii_out, "Sensor control now %d\r\n", sensor_control);
 #endif
@@ -519,13 +506,11 @@ int line_immediate(PROTOCOL_STAT *s, char *cmd, char *ascii_out) {
 //case 'I':
     speedB = 0;
     steerB = 0;
-    PWMData.pwm[1] = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
-    PWMData.pwm[0] = CLAMP(speedB * SPEED_COEFFICIENT +  steerB * STEER_COEFFICIENT, -1000, 1000);
-    SpeedData.wanted_speed_mm_per_sec[0] = SpeedData.wanted_speed_mm_per_sec[1] = speedB;
+    PWMData.pwm = CLAMP(speedB * SPEED_COEFFICIENT -  steerB * STEER_COEFFICIENT, -1000, 1000);
+    SpeedData.wanted_speed_mm_per_sec = speedB;
     dspeeds[0] = dspeeds[1] = speedB;
 #ifdef HALL_INTERRUPTS
-    PosnData.wanted_posn_mm[0] = HallData[0].HallPosn_mm;
-    PosnData.wanted_posn_mm[1] = HallData[1].HallPosn_mm;
+    PosnData.wanted_posn_mm = HallData[0].HallPosn_mm;
 #endif
     if (strlen(cmd) == 1){
         enable_immediate = 1;

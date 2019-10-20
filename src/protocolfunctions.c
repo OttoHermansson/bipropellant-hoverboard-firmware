@@ -57,15 +57,12 @@ void fn_enable ( PROTOCOL_STAT *s, PARAMSTAT *param, uint8_t fn_type, unsigned c
                 #ifdef HALL_INTERRUPTS
                     // assume we will enable,
                     // set wanted posn to current posn, else we may rush into a wall
-                    PosnData.wanted_posn_mm[0] = HallData[0].HallPosn_mm;
-                    PosnData.wanted_posn_mm[1] = HallData[1].HallPosn_mm;
+                    PosnData.wanted_posn_mm = HallData[0].HallPosn_mm;
                 #endif
 
                 // clear speeds to zero
-                SpeedData.wanted_speed_mm_per_sec[0] = 0;
-                SpeedData.wanted_speed_mm_per_sec[1] = 0;
-                PWMData.pwm[0] = 0;
-                PWMData.pwm[1] = 0;
+                SpeedData.wanted_speed_mm_per_sec = 0;
+                PWMData.pwm = 0;
                 #ifdef FLASH_STORAGE
                         init_PID_control();
                 #endif
@@ -80,17 +77,16 @@ void fn_enable ( PROTOCOL_STAT *s, PARAMSTAT *param, uint8_t fn_type, unsigned c
 ////////////////////////////////////////////////////////////////////////////////////////////
 // Variable & Functions for 0x01 sensor_data
 
-extern SENSOR_DATA sensor_data[2];
+extern SENSOR_DATA sensor_data;
 
 // used to send only pertinent data, not the whole structure
-PROTOCOL_SENSOR_FRAME sensor_copy[2];
+PROTOCOL_SENSOR_FRAME sensor_copy;
 
 void fn_SensorData ( PROTOCOL_STAT *s, PARAMSTAT *param, uint8_t fn_type, unsigned char *content, int len ) {
     switch (fn_type) {
         case FN_TYPE_PRE_READ:
             // copy just sensor input data
-            memcpy(&sensor_copy[0], &sensor_data[0].complete, sizeof(sensor_copy[0]));
-            memcpy(&sensor_copy[1], &sensor_data[1].complete, sizeof(sensor_copy[1]));
+            memcpy(&sensor_copy, &sensor_data.complete, sizeof(sensor_copy));
             break;
     }
 }
@@ -108,8 +104,7 @@ void fn_SensorData ( PROTOCOL_STAT *s, PARAMSTAT *param, uint8_t fn_type, unsign
 // Variable & Functions for 0x03 SpeedData
 
 PROTOCOL_SPEED_DATA SpeedData = {
-    {0, 0},
-
+    0,
     600, // max power (PWM)
     -600,  // min power
     40 // minimum mm/s which we can ask for
@@ -167,8 +162,7 @@ void fn_PositionIncr ( PROTOCOL_STAT *s, PARAMSTAT *param, uint8_t fn_type, unsi
             input_timeout_counter = 0;
 
             // increment our wanted position
-            PosnData.wanted_posn_mm[0] += ((POSN_INCR*) (param->ptr))->Left;
-            PosnData.wanted_posn_mm[1] += ((POSN_INCR*) (param->ptr))->Right;
+            PosnData.wanted_posn_mm += ((POSN_INCR*) (param->ptr))->Left;
             break;
     }
 }
@@ -177,8 +171,7 @@ void fn_PositionIncr ( PROTOCOL_STAT *s, PARAMSTAT *param, uint8_t fn_type, unsi
 // Variable & Functions for 0x06 PosnData
 
 PROTOCOL_POSN_DATA PosnData = {
-    {0, 0},
-
+    0,
     200, // max pwm in posn mode
     70, // min pwm in posn mode
 };
@@ -242,8 +235,7 @@ void fn_xytPosn ( PROTOCOL_STAT *s, PARAMSTAT *param, uint8_t fn_type, unsigned 
 // Variable & Functions for 0x0D PWMData and 0x0E PWMData.pwm
 
 PROTOCOL_PWM_DATA PWMData = {
-    .pwm[0] = 0,
-    .pwm[1] = 0,
+    .pwm = 0,
     .speed_max_power =  600,
     .speed_min_power = -600,
     .speed_minimum_pwm = 40 // guard value, below this set to zero
@@ -262,17 +254,17 @@ void fn_PWMData ( PROTOCOL_STAT *s, PARAMSTAT *param, uint8_t fn_type, unsigned 
         case FN_TYPE_POST_READRESPONSE:
         case FN_TYPE_POST_WRITE:
             for (int i = 0; i < 2; i++) {
-                if (((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] > ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_max_power) {
-                    ((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] = ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_max_power;
+                if (((PROTOCOL_PWM_DATA*) (param->ptr))->pwm > ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_max_power) {
+                    ((PROTOCOL_PWM_DATA*) (param->ptr))->pwm = ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_max_power;
                 }
-                if (((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] < ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_min_power) {
-                    ((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] = ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_min_power;
+                if (((PROTOCOL_PWM_DATA*) (param->ptr))->pwm < ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_min_power) {
+                    ((PROTOCOL_PWM_DATA*) (param->ptr))->pwm = ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_min_power;
                 }
-                if ((((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] > 0) && (((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] < ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_minimum_pwm)) {
-                    ((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] = 0;
+                if ((((PROTOCOL_PWM_DATA*) (param->ptr))->pwm > 0) && (((PROTOCOL_PWM_DATA*) (param->ptr))->pwm < ((PROTOCOL_PWM_DATA*) (param->ptr))->speed_minimum_pwm)) {
+                    ((PROTOCOL_PWM_DATA*) (param->ptr))->pwm = 0;
                 }
-                if ((((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] < 0) && (((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] > -((PROTOCOL_PWM_DATA*) (param->ptr))->speed_minimum_pwm)) {
-                    ((PROTOCOL_PWM_DATA*) (param->ptr))->pwm[i] = 0;
+                if ((((PROTOCOL_PWM_DATA*) (param->ptr))->pwm < 0) && (((PROTOCOL_PWM_DATA*) (param->ptr))->pwm > -((PROTOCOL_PWM_DATA*) (param->ptr))->speed_minimum_pwm)) {
+                    ((PROTOCOL_PWM_DATA*) (param->ptr))->pwm = 0;
                 }
             }
             break;

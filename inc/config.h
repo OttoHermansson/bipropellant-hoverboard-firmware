@@ -1,7 +1,6 @@
 #pragma once
 #include "stm32f1xx_hal.h"
 
-
 //////////////////////////////////////////////////////////
 // macro types for the hoverboard control style
 // add to add other control combinations
@@ -27,87 +26,24 @@
   /// and uses softwareserial for serial control on B2/C9
   #define READ_SENSOR
   #define CONTROL_SENSOR
-  #define SOFTWARE_SERIAL
-  #define SOFTWARE_SERIAL_RX_PIN GPIO_PIN_2
-  #define SOFTWARE_SERIAL_RX_PORT GPIOB
-  #define SOFTWARE_SERIAL_TX_PIN GPIO_PIN_9
-  #define SOFTWARE_SERIAL_TX_PORT GPIOC
-  //#define DEBUG_SERIAL_ASCII
-  #define DEBUG_SOFTWARE_SERIAL
+//  #define DEBUG_SERIAL_ASCII
 //    #define USART2_BAUD     52177    // control via usart from GD32 based sensor boards @52177 baud (10 word)
 //    #define USART3_BAUD     52177    // control via usart from GD32 based sensor boards @52177 baud (10 word)
   #define SENSOR_WORDS 10
   #define SERIAL_USART2_IT
-  #define SERIAL_USART3_IT
+// #define SERIAL_USART3_IT
+  #define DEBUG_BAUD 115200
   #define USART2_BAUD     26315    // reported baudrate for other sensor boards (6 word)?
   #define USART3_BAUD     26315    // reported baudrate for other sensor boards (6 word)?
   #define USART2_WORDLENGTH UART_WORDLENGTH_9B
   #define USART3_WORDLENGTH UART_WORDLENGTH_9B
   #define SERIAL_USART_IT_BUFFERTYPE unsigned short
+  #define DEBUG_SERIAL_USART3
 //#define SENSOR_WORDS 6
 //#define USART2_BAUD     32100    // reported baudrate for another sensor board  (10 word 'Denver' brand hoverboards)
 //#define USART3_BAUD     32100    // reported baudrate for another sensor board  (10 word 'Denver' brand hoverboards)
   // possibly baud rate based on ~2.5ms frame interval, so baud dependent on word count?
 #endif
-
-#if (CONTROL_TYPE == HOVERBOARD_WITH_SOFTWARE_SERIAL_B2_C9_6WORDSENSOR)
-  // this control type allows the board to be used AS a hoverboard,
-  // responding to sensor movements when in hoverboard mode.
-  /// and uses softwareserial for serial control on B2/C9
-  #define READ_SENSOR
-  #define CONTROL_SENSOR
-  #define SOFTWARE_SERIAL
-  #define SOFTWARE_SERIAL_RX_PIN GPIO_PIN_2
-  #define SOFTWARE_SERIAL_RX_PORT GPIOB
-  #define SOFTWARE_SERIAL_TX_PIN GPIO_PIN_9
-  #define SOFTWARE_SERIAL_TX_PORT GPIOC
-  //#define DEBUG_SERIAL_ASCII
-  #define DEBUG_SOFTWARE_SERIAL
-//#define USART2_BAUD     52177    // control via usart from GD32 based sensor boards @52177 baud (10 word)
-//#define USART3_BAUD     52177    // control via usart from GD32 based sensor boards @52177 baud (10 word)
-//#define SENSOR_WORDS 10
-  #define USART2_BAUD     26315    // reported baudrate for other sensor boards (6 word)?
-  #define USART3_BAUD     26315    // reported baudrate for other sensor boards (6 word)?
-  #define USART2_WORDLENGTH UART_WORDLENGTH_9B
-  #define USART3_WORDLENGTH UART_WORDLENGTH_9B
-  #define SERIAL_USART_IT_BUFFERTYPE unsigned short
-  #define SENSOR_WORDS 6
-  #define SERIAL_USART2_IT
-  #define SERIAL_USART3_IT
-//#define USART2_BAUD     32100    // reported baudrate for another sensor board (maybe 7 word)?
-//#define USART3_BAUD     32100    // reported baudrate for another sensor board (maybe 7 word)?
-  // possibly baud rate based on ~2.5ms frame interval, so baud dependent on word count?
-#endif
-
-
-#if (CONTROL_TYPE == SOFTWARE_SERIAL_A2_A3)
-  // hoverboard sensor functionality is disabled
-  // and uses softwareserial for serial control on A2/A3 -
-  // which are actually USART pins!
-  #define SOFTWARE_SERIAL
-  #define SOFTWARE_SERIAL_RX_PIN GPIO_PIN_2    // PB10/USART3_TX Pin29      PA2/USART2_TX/ADC123_IN2  Pin16
-  #define SOFTWARE_SERIAL_RX_PORT GPIOA
-  #define SOFTWARE_SERIAL_TX_PIN GPIO_PIN_3    // PB11/USART3_RX Pin30      PA3/USART2_RX/ADC123_IN3  Pin17
-  #define SOFTWARE_SERIAL_TX_PORT GPIOA
-  //#define DEBUG_SERIAL_ASCII
-#endif
-
-
-// implementaiton of specific for macro control types
-#if (CONTROL_TYPE == USART2_CONTROLLED)
-  // hoverboard sensor functionality is disabled
-  // and control is via USART2
-  #define SERIAL_USART2_IT
-#endif
-
-
-// implementaiton of specific for macro control types
-#if (CONTROL_TYPE == USART3_CONTROLLED)
-  // hoverboard sensor functionality is disabled
-  // and control is via USART3
-  #define SERIAL_USART3_IT
-#endif
-
 
 //////////////////////////////////////////////////////////
 // Default Values
@@ -141,18 +77,6 @@
   #define SENSOR_WORDS 10
 #endif
 
-#ifndef SOFTWARE_SERIAL_RX_PIN
-  #define SOFTWARE_SERIAL_RX_PIN GPIO_PIN_2
-#endif
-#ifndef SOFTWARE_SERIAL_RX_PORT
-  #define SOFTWARE_SERIAL_RX_PORT GPIOB
-#endif
-#ifndef   SOFTWARE_SERIAL_TX_PIN
-  #define SOFTWARE_SERIAL_TX_PIN GPIO_PIN_9
-#endif
-#ifndef   SOFTWARE_SERIAL_TX_PORT
-  #define SOFTWARE_SERIAL_TX_PORT GPIOC
-#endif
 #ifndef FLASH_DEFAULT_HOVERBOARD_ENABLE
   #define FLASH_DEFAULT_HOVERBOARD_ENABLE 1
 #endif
@@ -171,11 +95,6 @@
 #ifndef USART3_WORDLENGTH
   #define USART3_WORDLENGTH UART_WORDLENGTH_8B
 #endif
-
-#ifndef SOFTWARE_SERIAL_BAUD
-  #define SOFTWARE_SERIAL_BAUD 9600
-#endif
-
 
 // ############################### DO-NOT-TOUCH SETTINGS ###############################
 
@@ -214,10 +133,10 @@
 
 // Battery voltage calibration: connect power source. see <How to calibrate>. write value nr 5 to BAT_CALIB_ADC. make and flash firmware. then you can verify voltage on value 6 (devide it by 100.0 to get calibrated voltage).
 #ifndef BAT_CALIB_REAL_VOLTAGE
-  #define BAT_CALIB_REAL_VOLTAGE        43.0       // input voltage measured by multimeter
+  #define BAT_CALIB_REAL_VOLTAGE        24 // 43.0       // input voltage measured by multimeter
 #endif
 #ifndef BAT_CALIB_ADC
-  #define BAT_CALIB_ADC                 1704       // adc-value measured by mainboard (value nr 4 on UART debug output)
+  #define BAT_CALIB_ADC                 857       // adc-value measured by mainboard (value nr 4 on UART debug output)
 #endif
 
 #ifndef BAT_NUMBER_OF_CELLS
@@ -225,20 +144,20 @@
 #endif
 
 #ifndef BAT_LOW_LVL1_ENABLE
-  #define BAT_LOW_LVL1_ENABLE     0         // to beep or not to beep, 1 or 0
+  #define BAT_LOW_LVL1_ENABLE     1         // to beep or not to beep, 1 or 0
 #endif
 #ifndef BAT_LOW_LVL1
-  #define BAT_LOW_LVL1            3.6       // gently beeps at this voltage level. [V/cell]
+  #define BAT_LOW_LVL1            2.3 // 3.6       // gently beeps at this voltage level. [V/cell]
 #endif
 
 #ifndef BAT_LOW_LVL2_ENABLE
   #define BAT_LOW_LVL2_ENABLE     1         // to beep or not to beep, 1 or 0
 #endif
 #ifndef BAT_LOW_LVL2
-  #define BAT_LOW_LVL2            3.5       // your battery is almost empty. Charge now! [V/cell]
+  #define BAT_LOW_LVL2            2.25 // 3.5       // your battery is almost empty. Charge now! [V/cell]
 #endif
 #ifndef BAT_LOW_DEAD
-  #define BAT_LOW_DEAD            3.37      // undervoltage poweroff. (while not driving) [V/cell]
+  #define BAT_LOW_DEAD            2.2 // 3.37      // undervoltage poweroff. (while not driving) [V/cell]
 #endif
 
 #ifndef DC_CUR_LIMIT

@@ -93,7 +93,7 @@ typedef struct tag_sensor_lights {
 } SENSOR_LIGHTS;
 #pragma pack(pop)
 
-extern SENSOR_DATA sensor_data[2];
+extern SENSOR_DATA sensor_data;
 
 
 // bit masks for colour
@@ -108,17 +108,17 @@ extern SENSOR_DATA sensor_data[2];
 
 
 
-int  USART_sensorSend(int port, unsigned char *data, int len, int startframe);
-SERIAL_USART_IT_BUFFERTYPE USART_sensor_getrx(int port);
-int USART_sensor_rxcount(int port);
-int USART_sensor_txcount(int port);
+int  USART_sensorSend(unsigned char *data, int len, int startframe);
+SERIAL_USART_IT_BUFFERTYPE USART_sensor_getrx();
+int USART_sensor_rxcount();
+int USART_sensor_txcount();
 /////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////
 // internal functions
-int  USART_sensor_starttx(int port);
-void USART_sensor_addTXshort(int port, SERIAL_USART_IT_BUFFERTYPE value);
+int  USART_sensor_starttx();
+void USART_sensor_addTXshort(SERIAL_USART_IT_BUFFERTYPE value);
 
 int getSensorBaudRate();
 
